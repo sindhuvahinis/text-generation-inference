@@ -7,6 +7,7 @@ from pb_types import RequestPB, BatchPB, \
 from causal_lm import CausalLM
 
 import os
+import argparse
 
 INPUT_TEXT = "Amazon is"
 
