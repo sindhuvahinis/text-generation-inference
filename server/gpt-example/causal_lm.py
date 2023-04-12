@@ -7,7 +7,7 @@ from typing import Optional, Tuple, List, Type
 
 from text_generation_server.models import Model
 
-from pb_types import BatchPB, PrefillTokensPB, GeneratedTextPB, GenerationPB
+from pb_types import BatchPB, PrefillTokensPB, GeneratedTextPB, GenerationPB, RequestPB
 from tokens import NextTokenChooser, StoppingCriteria, Sampling
 
 tracer = trace.get_tracer(__name__)
