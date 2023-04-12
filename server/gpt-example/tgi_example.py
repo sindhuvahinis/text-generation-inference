@@ -5,6 +5,7 @@ sys.path.append('/tmp/ws/text-generation-inference/server')
 from pb_types import RequestPB, BatchPB, \
     StoppingCriteriaParametersPB, NextTokenChooserParametersPB
 from causal_lm import CausalLM
+from gpt_neox import GPTNeoxSharded
 
 import os
 import argparse
@@ -13,7 +14,10 @@ INPUT_TEXT = "Amazon is"
 
 
 def handle(args):
-    model = CausalLM('EleutherAI/gpt-neox-20b', None, quantize=False)
+    if args.sharded:
+        model = GPTNeoxSharded('EleutherAI/gpt-neox-20b', None, quantize=False)
+    else:
+        model = CausalLM('EleutherAI/gpt-neox-20b', None, quantize=False)
     print("loaded model")
 
     parameters = NextTokenChooserParametersPB()
@@ -34,5 +38,6 @@ def handle(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-new-tokens", type=int, default=20)
+    parser.add_argument("--sharded", action="store_true")
     args = parser.parse_args()
     handle(args)
