@@ -6,22 +6,17 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenize
 from typing import Optional, Tuple, List, Type
 
 from text_generation_server.models import Model
-from text_generation_server.models.types import (
-    Batch,
-    PrefillTokens,
-    Generation,
-    GeneratedText,
-)
-from text_generation_server.pb import generate_pb2
-from text_generation_server.utils import NextTokenChooser, StoppingCriteria, Sampling
+
+from pb_types import BatchPB, PrefillTokensPB, GeneratedTextPB, GenerationPB
+from tokens import NextTokenChooser, StoppingCriteria, Sampling
 
 tracer = trace.get_tracer(__name__)
 
 
 @dataclass
-class CausalLMBatch(Batch):
+class CausalLMBatch(BatchPB):
     batch_id: int
-    requests: List[generate_pb2.Request]
+    requests: List[RequestPB]
 
     # Decoder values
     input_ids: torch.Tensor
@@ -47,17 +42,10 @@ class CausalLMBatch(Batch):
     # Past metadata
     keys_head_dim_last: bool = True
 
-    def to_pb(self) -> generate_pb2.Batch:
-        return generate_pb2.Batch(
-            id=self.batch_id,
-            requests=self.requests,
-            size=self.size,
-        )
-
     @classmethod
-    def from_pb(
+    def get_batch(
             cls,
-            pb: generate_pb2.Batch,
+            pb: BatchPB,
             tokenizer: PreTrainedTokenizerBase,
             device: torch.device,
     ) -> "CausalLMBatch":
@@ -334,7 +322,7 @@ class CausalLM(Model):
     @tracer.start_as_current_span("generate_token")
     def generate_token(
             self, batch: CausalLMBatch
-    ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
+    ) -> Tuple[List[GenerationPB], Optional[CausalLMBatch]]:
         # slice the attention mask to the correct shape
         attention_mask = batch.attention_mask[:, : -batch.padding_right_offset]
 
@@ -358,7 +346,7 @@ class CausalLM(Model):
         next_batch_max_input_length = 0
 
         # Results
-        generations: List[Generation] = []
+        generations: List[GenerationPB] = []
 
         # Zipped iterator
         iterator = zip(
@@ -412,7 +400,7 @@ class CausalLM(Model):
                 else:
                     seed = None
 
-                generated_text = GeneratedText(
+                generated_text = GeneratedTextPB(
                     output_text, stopping_criteria.current_tokens, reason, seed
                 )
             else:
@@ -439,13 +427,13 @@ class CausalLM(Model):
                     clean_up_tokenization_spaces=False,
                     skip_special_tokens=False,
                 )
-                prefill_tokens = PrefillTokens(
+                prefill_tokens = PrefillTokensPB(
                     prefill_token_ids, prefill_logprobs, prefill_texts
                 )
             else:
                 prefill_tokens = None
 
-            generation = Generation(
+            generation = GenerationPB(
                 request.id,
                 prefill_tokens,
                 next_token_id_squeezed,
