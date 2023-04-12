@@ -5,8 +5,7 @@ from opentelemetry import trace
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerBase
 from typing import Optional, Tuple, List, Type
 
-from text_generation_server.models import Model
-
+from model import Model
 from pb_types import BatchPB, PrefillTokensPB, GeneratedTextPB, GenerationPB, RequestPB
 from tokens import NextTokenChooser, StoppingCriteria, Sampling
 

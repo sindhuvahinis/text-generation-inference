@@ -139,14 +139,17 @@ class StoppingCriteria:
     def __call__(self, last_token: int, last_output: str) -> Tuple[bool, Optional[str]]:
         self.current_tokens += 1
         if self.current_tokens >= self.max_new_tokens:
+            print(f'Finish reason length {FinishReason.FINISH_REASON_LENGTH}')
             return True, FinishReason.FINISH_REASON_LENGTH
 
         if not self.ignore_eos_token and last_token == self.eos_token_id:
+            print(f'Finish reason eos token {FinishReason.FINISH_REASON_EOS_TOKEN}')
             return True, FinishReason.FINISH_REASON_EOS_TOKEN
 
         self.current_output += last_output
         for stop_sequence_criteria in self.stop_sequence_criterias:
             if stop_sequence_criteria(self.current_output):
+                print(f'Finish reason stop sequence {FinishReason.FINISH_REASON_STOP_SEQUENCE}')
                 return True, FinishReason.FINISH_REASON_STOP_SEQUENCE
 
         return False, None
