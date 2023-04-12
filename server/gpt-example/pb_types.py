@@ -1,5 +1,6 @@
-from text_generation_server.pb.generate_pb2 import FinishReason
 from typing import Optional
+from enum import Enum
+
 
 class NextTokenChooserParametersPB(object):
     # TODO: remove hardcoded values and make them configurable
@@ -56,8 +57,18 @@ class GenerationPB(object):
         self.token_is_special = token_is_special
         self.generated_text = generated_text
 
+
+class FinishReasonPB(Enum):
+    # number of generated tokens == `max_new_tokens`
+    Length = "length"
+    # the model generated its end of sequence token
+    EndOfSequenceToken = "eos_token"
+    # the model generated a text included in `stop_sequences`
+    StopSequence = "stop_sequence"
+
+
 class GeneratedTextPB(object):
-    def __init__(self, text, generated_tokens, finish_reason: FinishReason, seed: Optional[int]):
+    def __init__(self, text, generated_tokens, finish_reason: FinishReasonPB, seed: Optional[int]):
         self.text = text
         self.generated_tokens = generated_tokens
         self.finish_reason = finish_reason

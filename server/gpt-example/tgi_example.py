@@ -33,6 +33,6 @@ def handle(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--max_new_tokens", type=int, default=20)
+    parser.add_argument("--max-new-tokens", type=int, default=20)
     args = parser.parse_args()
     handle(args)
