@@ -1,3 +1,5 @@
+from text_generation_server.pb.generate_pb2 import FinishReason
+
 class NextTokenChooserParametersPB(object):
     # TODO: remove hardcoded values and make them configurable
     def __init__(self):
