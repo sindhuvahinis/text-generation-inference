@@ -14,6 +14,7 @@ from text_generation_server.models.types import (
 )
 from text_generation_server.pb import generate_pb2
 from text_generation_server.utils import NextTokenChooser, StoppingCriteria, Sampling
+import logging
 
 tracer = trace.get_tracer(__name__)
 
@@ -50,7 +51,7 @@ class CausalLMBatch(Batch):
     keys_head_dim_last: bool = True
 
     def to_pb(self) -> generate_pb2.Batch:
-        print("At Causal LM to_pb")
+        logging.info("At Causal LM to_pb")
         return generate_pb2.Batch(
             id=self.batch_id,
             requests=self.requests,
@@ -65,7 +66,7 @@ class CausalLMBatch(Batch):
         device: torch.device,
     ) -> "CausalLMBatch":
 
-        print("Causal LM from PB")
+        logging.info("Causal LM from PB")
         inputs = []
         next_token_choosers = []
         stopping_criterias = []
@@ -358,7 +359,7 @@ class CausalLM(Model):
         self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
 
-        print("Causal LM Generate token")
+        logging.info("Causal LM Generate token")
         # slice the attention mask to the correct shape
         attention_mask = batch.attention_mask[:, : -batch.padding_right_offset]
 
