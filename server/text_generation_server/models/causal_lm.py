@@ -50,6 +50,7 @@ class CausalLMBatch(Batch):
     keys_head_dim_last: bool = True
 
     def to_pb(self) -> generate_pb2.Batch:
+        print("At Causal LM to_pb")
         return generate_pb2.Batch(
             id=self.batch_id,
             requests=self.requests,
