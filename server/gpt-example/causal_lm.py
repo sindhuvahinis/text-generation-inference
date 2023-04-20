@@ -280,6 +280,7 @@ class CausalLM(Model):
             quantize: bool = False,
             decode_buffer: int = 3,
     ):
+        print("GPTNEOX CausalLM")
         if torch.cuda.is_available():
             device = torch.device("cuda")
             dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
@@ -315,6 +316,7 @@ class CausalLM(Model):
         return CausalLMBatch
 
     def decode(self, generated_ids: List[int]) -> str:
+        print("GPTNEOX decode")
         return self.tokenizer.decode(
             generated_ids, skip_special_tokens=True, cleanup_tokenization_spaces=False
         )
@@ -322,6 +324,7 @@ class CausalLM(Model):
     def forward(
             self, input_ids, attention_mask, position_ids, past_key_values: Optional = None
     ) -> Tuple[torch.Tensor, List[Tuple[torch.Tensor, torch.Tensor]]]:
+        print("GPTNEOX forward")
         # Model Forward
         outputs = self.model.forward(
             input_ids=input_ids,
@@ -335,6 +338,7 @@ class CausalLM(Model):
     def generate_token(
             self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
+        print("GPTNEOX generate token")
         # slice the attention mask to the correct shape
         attention_mask = batch.attention_mask[:, : -batch.padding_right_offset]
 
