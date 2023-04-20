@@ -11,7 +11,7 @@ class NextTokenChooserParameters(object):
         self.typical_p = 1
         self.do_sample = None
         self.seed = 155956926070191748
-        self.repetition_penalty = 1
+        self.repetition_penalty = 1.0
         self.watermark = None
 
 
