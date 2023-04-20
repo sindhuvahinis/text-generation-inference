@@ -64,6 +64,8 @@ class CausalLMBatch(Batch):
         tokenizer: PreTrainedTokenizerBase,
         device: torch.device,
     ) -> "CausalLMBatch":
+
+        print("Causal LM from PB")
         inputs = []
         next_token_choosers = []
         stopping_criterias = []
@@ -355,6 +357,8 @@ class CausalLM(Model):
     def generate_token(
         self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
+
+        print("Causal LM Generate token")
         # slice the attention mask to the correct shape
         attention_mask = batch.attention_mask[:, : -batch.padding_right_offset]
 
