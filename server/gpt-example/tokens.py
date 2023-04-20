@@ -39,12 +39,8 @@ class NextTokenChooser:
             parameters: NextTokenChooserParameters,
             device="cpu"
     ):
-
-        warpers = LogitsProcessorList()
-        sampling = parameters.do_sample
-
-        self.warpers = warpers
-        self.choice = Sampling(parameters.seed, device) if sampling else Greedy()
+        self.warpers = LogitsProcessorList()
+        self.choice = Sampling(parameters.seed, device) if parameters.do_sample else Greedy()
 
     def __call__(self, input_ids, scores):
         # Warp logits
