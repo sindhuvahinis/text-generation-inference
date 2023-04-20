@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenize
 from typing import Optional, Tuple, List, Type
 
 from model import Model
-from parameters import Batch, PrefillTokensParameters, GeneratedText, Generation, Request
+from parameters import Batch, PrefillTokens, GeneratedText, Generation, Request
 from tokens import NextTokenChooser, StoppingCriteria, Sampling
 
 @dataclass
@@ -24,6 +24,8 @@ class CausalLMBatch(Batch):
 
     # Lengths of all generations present in the batch
     input_lengths: List[int]
+    offsets: List[Optional[int]]
+    token_offsets: List[Optional[int]]
 
     # Generation helpers
     next_token_choosers: List[NextTokenChooser]
@@ -47,12 +49,16 @@ class CausalLMBatch(Batch):
         inputs = []
         next_token_choosers = []
         stopping_criterias = []
+        offsets = []
+        token_offsets = []
 
         # Parse batch
         max_truncation = 0
         padding_right_offset = 0
         for r in batch.requests:
             inputs.append(r.inputs)
+            offsets.append(None)
+            token_offsets.append(None)
             next_token_choosers.append(NextTokenChooser(r.parameters, device))
             stopping_criteria = StoppingCriteria(
                 r.stopping_parameters, tokenizer
@@ -96,6 +102,8 @@ class CausalLMBatch(Batch):
             past_key_values=None,
             all_input_ids=all_input_ids,
             input_lengths=input_lengths.tolist(),
+            offsets=offsets,
+            token_offsets=token_offsets,
             next_token_choosers=next_token_choosers,
             stopping_criterias=stopping_criterias,
             size=batch.size,
@@ -117,6 +125,8 @@ class CausalLMBatch(Batch):
         # Batch attributes
         requests = []
         input_lengths = []
+        offsets = []
+        token_offsets = []
         all_input_ids = []
         next_token_choosers = []
         stopping_criterias = []
@@ -133,6 +143,8 @@ class CausalLMBatch(Batch):
         for i, batch in enumerate(batches):
             requests.extend(batch.requests)
             input_lengths.extend(batch.input_lengths)
+            offsets.extend(batch.offsets)
+            token_offsets.extend(batch.token_offsets)
             all_input_ids.extend(batch.all_input_ids)
             next_token_choosers.extend(batch.next_token_choosers)
             stopping_criterias.extend(batch.stopping_criterias)
@@ -246,6 +258,8 @@ class CausalLMBatch(Batch):
             past_key_values=past_key_values,
             all_input_ids=all_input_ids,
             input_lengths=input_lengths,
+            offsets=offsets,
+            token_offsets=token_offsets,
             next_token_choosers=next_token_choosers,
             stopping_criterias=stopping_criterias,
             size=total_batch_size,
@@ -259,7 +273,13 @@ class CausalLMBatch(Batch):
 
 
 class CausalLM(Model):
-    def __init__(self, model_id: str, revision: Optional[str] = None, quantize=False):
+    def __init__(
+            self,
+            model_id: str,
+            revision: Optional[str] = None,
+            quantize: bool = False,
+            decode_buffer: int = 3,
+    ):
         if torch.cuda.is_available():
             device = torch.device("cuda")
             dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
@@ -271,7 +291,7 @@ class CausalLM(Model):
             dtype = torch.float32
 
         tokenizer = AutoTokenizer.from_pretrained(
-            model_id, revision=revision, padding_side="left"
+            model_id, revision=revision, padding_side="left", truncation_side="left"
         )
         self.model = AutoModelForCausalLM.from_pretrained(
             model_id,
@@ -287,8 +307,7 @@ class CausalLM(Model):
         )
 
         super(CausalLM, self).__init__(
-            tokenizer=tokenizer,
-            device=device,
+            tokenizer=tokenizer, device=device, decode_buffer=decode_buffer
         )
 
     @property
@@ -313,6 +332,7 @@ class CausalLM(Model):
         )
         return outputs.logits, outputs.past_key_values
 
+    @tracer.start_as_current_span("generate_token")
     def generate_token(
             self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
@@ -331,6 +351,8 @@ class CausalLM(Model):
 
         # New values for next forward
         next_batch_input_lengths = []
+        next_batch_offsets = []
+        next_batch_token_offsets = []
         next_batch_input_ids = []
         next_batch_all_input_ids = []
 
@@ -345,6 +367,8 @@ class CausalLM(Model):
         iterator = zip(
             batch.requests,
             batch.input_lengths,
+            batch.offsets,
+            batch.token_offsets,
             logits,
             batch.next_token_choosers,
             batch.stopping_criterias,
@@ -355,6 +379,8 @@ class CausalLM(Model):
         for i, (
                 request,
                 input_length,
+                offset,
+                token_offset,
                 logits,
                 next_token_chooser,
                 stopping_criteria,
@@ -372,8 +398,8 @@ class CausalLM(Model):
             # Generated token
             next_token_logprob = logprobs[-1, next_token_id]
             next_token_id_squeezed = next_token_id.squeeze()
-            next_token_text = self.decode_token(
-                next_token_id_squeezed,
+            next_token_text, offset, token_offset = self.decode_token(
+                all_input_ids[:, 0], offset, token_offset
             )
 
             # Evaluate stopping criteria
@@ -404,6 +430,8 @@ class CausalLM(Model):
                 next_batch_all_input_ids.append(all_input_ids)
                 next_batch_size += 1
                 next_batch_input_lengths.append(new_input_length)
+                next_batch_offsets.append(offset)
+                next_batch_token_offsets.append(token_offset)
                 next_batch_max_input_length = max(
                     next_batch_max_input_length, new_input_length
                 )
@@ -420,7 +448,7 @@ class CausalLM(Model):
                     clean_up_tokenization_spaces=False,
                     skip_special_tokens=False,
                 )
-                prefill_tokens = PrefillTokensParameters(
+                prefill_tokens = PrefillTokens(
                     prefill_token_ids, prefill_logprobs, prefill_texts
                 )
             else:
@@ -487,6 +515,8 @@ class CausalLM(Model):
             past_key_values=next_batch_past_key_values,
             all_input_ids=next_batch_all_input_ids,
             input_lengths=next_batch_input_lengths,
+            offsets=next_batch_offsets,
+            token_offsets=next_batch_token_offsets,
             next_token_choosers=next_batch_next_token_choosers,
             stopping_criterias=next_batch_stopping_criterias,
             size=next_batch_size,

@@ -39,7 +39,7 @@ class Batch(object):
         self.size = len(self.requests)
 
 
-class PrefillTokensParameters(object):
+class PrefillTokens(object):
     def __init__(self, token_ids, logprobs, texts) -> None:
         self.token_ids = token_ids
         self.logprobs = logprobs
