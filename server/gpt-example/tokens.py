@@ -12,8 +12,7 @@ from transformers import (
 )
 from typing import List, Tuple, Optional
 
-from watermark import WatermarkLogitsProcessor
-from pb_types import StoppingCriteriaParametersPB, NextTokenChooserParametersPB
+from parameters import StoppingCriteriaParameters, NextTokenChooserParameters
 
 
 
@@ -37,23 +36,19 @@ class Greedy:
 class NextTokenChooser:
     def __init__(
             self,
-            watermark=False,
-            temperature=1.0,
-            repetition_penalty=1.0,
-            top_k=None,
-            top_p=None,
-            typical_p=None,
-            do_sample=False,
-            seed=0,
-            device="cpu",
+            parameters: NextTokenChooserParameters,
+            device="cpu"
     ):
-        warpers = LogitsProcessorList()
-        # the following idea is largely copied from this PR: https://github.com/huggingface/transformers/pull/5420/files
-        # all samplers can be found in `generation_utils_samplers.py`
-        sampling = do_sample
 
-        if watermark:
-            warpers.append(WatermarkLogitsProcessor(device=device))
+        temperature = parameters.temperature,
+        repetition_penalty = parameters.repetition_penalty,
+        top_k = parameters.top_k,
+        top_p = parameters.top_p,
+        typical_p = parameters.typical_p,
+
+        warpers = LogitsProcessorList()
+        sampling = parameters.do_sample
+
         if repetition_penalty is not None and repetition_penalty != 1.0:
             warpers.append(RepetitionPenaltyLogitsProcessor(penalty=repetition_penalty))
         if temperature is not None and temperature != 1.0:
@@ -71,7 +66,7 @@ class NextTokenChooser:
             sampling = True
 
         self.warpers = warpers
-        self.choice = Sampling(seed, device) if sampling else Greedy()
+        self.choice = Sampling(parameters.seed, device) if sampling else Greedy()
 
     def __call__(self, input_ids, scores):
         # Warp logits
@@ -89,24 +84,6 @@ class NextTokenChooser:
 
         return next_id.view(1, 1), logprobs
 
-    @classmethod
-    def from_pb(
-            cls,
-            pb: NextTokenChooserParametersPB,
-            device: torch.device,
-    ) -> "NextTokenChooser":
-        return NextTokenChooser(
-            watermark=pb.watermark,
-            temperature=pb.temperature,
-            repetition_penalty=pb.repetition_penalty,
-            top_k=pb.top_k,
-            top_p=pb.top_p,
-            typical_p=pb.typical_p,
-            do_sample=pb.do_sample,
-            seed=pb.seed,
-            device=device,
-        )
-
 
 class StopSequenceCriteria:
     def __init__(self, stop_sequence: str):
@@ -122,17 +99,20 @@ class StopSequenceCriteria:
 class StoppingCriteria:
     def __init__(
             self,
-            eos_token_id: int,
-            stop_sequence_criterias: List[StopSequenceCriteria],
-            max_new_tokens: int = 20,
-            ignore_eos_token: bool = False,
+            parameters: StoppingCriteriaParameters,
+            tokenizer: PreTrainedTokenizerBase,
     ):
-        self.eos_token_id = eos_token_id
+
+        stop_sequence_criterias = [
+            StopSequenceCriteria(sequence) for sequence in parameters.stop_sequences
+        ]
+
+        self.eos_token_id = tokenizer.eos_token_id
         self.stop_sequence_criterias = stop_sequence_criterias
-        self.max_new_tokens = max_new_tokens
+        self.max_new_tokens = parameters.max_new_tokens
         self.current_tokens = 0
         self.current_output = ""
-        self.ignore_eos_token = ignore_eos_token
+        self.ignore_eos_token = parameters.ignore_eos_token
 
     def __call__(self, last_token: int, last_output: str) -> Tuple[bool, Optional[str]]:
         self.current_tokens += 1
@@ -148,19 +128,3 @@ class StoppingCriteria:
                 return True, ""
 
         return False, None
-
-    @classmethod
-    def from_pb(
-            cls,
-            pb: StoppingCriteriaParametersPB,
-            tokenizer: PreTrainedTokenizerBase,
-    ) -> "StoppingCriteria":
-        stop_sequence_criterias = [
-            StopSequenceCriteria(sequence) for sequence in pb.stop_sequences
-        ]
-        return StoppingCriteria(
-            tokenizer.eos_token_id,
-            stop_sequence_criterias,
-            pb.max_new_tokens,
-            pb.ignore_eos_token,
-        )

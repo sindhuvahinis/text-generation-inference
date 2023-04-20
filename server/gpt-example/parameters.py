@@ -2,7 +2,7 @@ from typing import Optional
 from enum import Enum
 
 
-class NextTokenChooserParametersPB(object):
+class NextTokenChooserParameters(object):
     # TODO: remove hardcoded values and make them configurable
     def __init__(self):
         self.temperature = 1
@@ -15,14 +15,14 @@ class NextTokenChooserParametersPB(object):
         self.watermark = None
 
 
-class StoppingCriteriaParametersPB(object):
+class StoppingCriteriaParameters(object):
     def __init__(self, max_new_tokens):
         self.ignore_eos_token = False
         self.max_new_tokens = max_new_tokens
         self.stop_sequences = []
 
 
-class RequestPB(object):
+class Request(object):
     def __init__(self, inputs, parameters, stopping_parameters) -> None:
         self.id = None
         self.inputs = inputs
@@ -32,21 +32,21 @@ class RequestPB(object):
         self.truncate = 100
 
 
-class BatchPB(object):
+class Batch(object):
     def __init__(self, requests) -> None:
         self.id = None
         self.requests = requests
         self.size = len(self.requests)
 
 
-class PrefillTokensPB(object):
+class PrefillTokensParameters(object):
     def __init__(self, token_ids, logprobs, texts) -> None:
         self.token_ids = token_ids
         self.logprobs = logprobs
         self.texts = texts
 
 
-class GenerationPB(object):
+class Generation(object):
     def __init__(self, request_id, prefill_tokens, token_id, token_logprob,
                  token_text, token_is_special, generated_text) -> None:
         self.request_id = request_id
@@ -58,7 +58,7 @@ class GenerationPB(object):
         self.generated_text = generated_text
 
 
-class FinishReasonPB(Enum):
+class FinishReasonParameters(Enum):
     # number of generated tokens == `max_new_tokens`
     Length = "length"
     # the model generated its end of sequence token
@@ -67,8 +67,8 @@ class FinishReasonPB(Enum):
     StopSequence = "stop_sequence"
 
 
-class GeneratedTextPB(object):
-    def __init__(self, text, generated_tokens, finish_reason: FinishReasonPB, seed: Optional[int]):
+class GeneratedText(object):
+    def __init__(self, text, generated_tokens, finish_reason: FinishReasonParameters, seed: Optional[int]):
         self.text = text
         self.generated_tokens = generated_tokens
         self.finish_reason = finish_reason

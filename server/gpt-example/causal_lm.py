@@ -6,16 +6,16 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenize
 from typing import Optional, Tuple, List, Type
 
 from model import Model
-from pb_types import BatchPB, PrefillTokensPB, GeneratedTextPB, GenerationPB, RequestPB
+from parameters import Batch, PrefillTokensParameters, GeneratedText, Generation, Request
 from tokens import NextTokenChooser, StoppingCriteria, Sampling
 
 tracer = trace.get_tracer(__name__)
 
 
 @dataclass
-class CausalLMBatch(BatchPB):
+class CausalLMBatch(Batch):
     batch_id: int
-    requests: List[RequestPB]
+    requests: List[Request]
 
     # Decoder values
     input_ids: torch.Tensor
@@ -44,7 +44,7 @@ class CausalLMBatch(BatchPB):
     @classmethod
     def get_batch(
             cls,
-            pb: BatchPB,
+            batch: Batch,
             tokenizer: PreTrainedTokenizerBase,
             device: torch.device,
     ) -> "CausalLMBatch":
@@ -55,10 +55,10 @@ class CausalLMBatch(BatchPB):
         # Parse batch
         max_truncation = 0
         padding_right_offset = 0
-        for r in pb.requests:
+        for r in batch.requests:
             inputs.append(r.inputs)
-            next_token_choosers.append(NextTokenChooser.from_pb(r.parameters, device))
-            stopping_criteria = StoppingCriteria.from_pb(
+            next_token_choosers.append(NextTokenChooser(r.parameters, device))
+            stopping_criteria = StoppingCriteria(
                 r.stopping_parameters, tokenizer
             )
             stopping_criterias.append(stopping_criteria)
@@ -82,7 +82,7 @@ class CausalLMBatch(BatchPB):
         input_ids = tokenized_inputs["input_ids"]
         # Allocate maximum attention_mask
         attention_mask = input_ids.new_zeros(
-            (pb.size, max_input_length + padding_right_offset)
+            (batch.size, max_input_length + padding_right_offset)
         )
         # Copy tokenizer attention_mask into fully allocated attention_mask
         attention_mask[:, :max_input_length] = tokenized_inputs["attention_mask"]
@@ -92,8 +92,8 @@ class CausalLMBatch(BatchPB):
         all_input_ids = tokenized_inputs["input_ids"].unsqueeze(-1)
 
         return cls(
-            batch_id=pb.id,
-            requests=pb.requests,
+            batch_id=batch.id,
+            requests=batch.requests,
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -102,7 +102,7 @@ class CausalLMBatch(BatchPB):
             input_lengths=input_lengths.tolist(),
             next_token_choosers=next_token_choosers,
             stopping_criterias=stopping_criterias,
-            size=pb.size,
+            size=batch.size,
             max_input_length=max_input_length.item(),
             padding_right_offset=padding_right_offset,
         )
@@ -321,7 +321,7 @@ class CausalLM(Model):
     @tracer.start_as_current_span("generate_token")
     def generate_token(
             self, batch: CausalLMBatch
-    ) -> Tuple[List[GenerationPB], Optional[CausalLMBatch]]:
+    ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
         # slice the attention mask to the correct shape
         attention_mask = batch.attention_mask[:, : -batch.padding_right_offset]
 
@@ -345,7 +345,7 @@ class CausalLM(Model):
         next_batch_max_input_length = 0
 
         # Results
-        generations: List[GenerationPB] = []
+        generations: List[Generation] = []
 
         # Zipped iterator
         iterator = zip(
@@ -399,7 +399,7 @@ class CausalLM(Model):
                 else:
                     seed = None
 
-                generated_text = GeneratedTextPB(
+                generated_text = GeneratedText(
                     output_text, stopping_criteria.current_tokens, reason, seed
                 )
             else:
@@ -426,13 +426,13 @@ class CausalLM(Model):
                     clean_up_tokenization_spaces=False,
                     skip_special_tokens=False,
                 )
-                prefill_tokens = PrefillTokensPB(
+                prefill_tokens = PrefillTokensParameters(
                     prefill_token_ids, prefill_logprobs, prefill_texts
                 )
             else:
                 prefill_tokens = None
 
-            generation = GenerationPB(
+            generation = Generation(
                 request.id,
                 prefill_tokens,
                 next_token_id_squeezed,

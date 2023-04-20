@@ -2,8 +2,8 @@ import sys
 
 sys.path.append('/tmp/ws/text-generation-inference/server')
 
-from pb_types import RequestPB, BatchPB, \
-    StoppingCriteriaParametersPB, NextTokenChooserParametersPB
+from parameters import Request, Batch, \
+    StoppingCriteriaParameters, NextTokenChooserParameters
 from causal_lm import CausalLM
 from gpt_neox import GPTNeoxSharded
 
@@ -20,10 +20,10 @@ def handle(args):
         model = CausalLM('EleutherAI/gpt-neox-20b', None, quantize=False)
     print("loaded model")
 
-    parameters = NextTokenChooserParametersPB()
-    stopping_criteria = StoppingCriteriaParametersPB(args.max_new_tokens)
-    request = RequestPB(INPUT_TEXT, parameters, stopping_criteria)
-    request_batch = BatchPB([request])
+    parameters = NextTokenChooserParameters()
+    stopping_criteria = StoppingCriteriaParameters(args.max_new_tokens)
+    request = Request(INPUT_TEXT, parameters, stopping_criteria)
+    request_batch = Batch([request])
 
     batch = model.batch_type.get_batch(request_batch, model.tokenizer, model.device)
     token_count = 1
