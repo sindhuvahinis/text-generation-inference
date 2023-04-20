@@ -332,7 +332,6 @@ class CausalLM(Model):
         )
         return outputs.logits, outputs.past_key_values
 
-    @tracer.start_as_current_span("generate_token")
     def generate_token(
             self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
