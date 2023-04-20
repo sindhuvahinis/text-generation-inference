@@ -40,30 +40,8 @@ class NextTokenChooser:
             device="cpu"
     ):
 
-        temperature = parameters.temperature,
-        repetition_penalty = parameters.repetition_penalty,
-        top_k = parameters.top_k,
-        top_p = parameters.top_p,
-        typical_p = parameters.typical_p,
-
         warpers = LogitsProcessorList()
         sampling = parameters.do_sample
-
-        if repetition_penalty is not None and repetition_penalty != 1.0:
-            warpers.append(RepetitionPenaltyLogitsProcessor(penalty=repetition_penalty))
-        if temperature is not None and temperature != 1.0:
-            temperature = float(temperature)
-            warpers.append(TemperatureLogitsWarper(temperature))
-            sampling = True
-        if top_k is not None and top_k != 0:
-            warpers.append(TopKLogitsWarper(top_k=top_k))
-            sampling = True
-        if top_p is not None and top_p < 1.0:
-            warpers.append(TopPLogitsWarper(top_p=top_p))
-            sampling = True
-        if typical_p is not None and typical_p < 1.0:
-            warpers.append(TypicalLogitsWarper(mass=typical_p))
-            sampling = True
 
         self.warpers = warpers
         self.choice = Sampling(parameters.seed, device) if sampling else Greedy()
