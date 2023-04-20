@@ -1,16 +1,12 @@
 import torch
 
 from dataclasses import dataclass
-from opentelemetry import trace
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerBase
 from typing import Optional, Tuple, List, Type
 
 from model import Model
 from parameters import Batch, PrefillTokensParameters, GeneratedText, Generation, Request
 from tokens import NextTokenChooser, StoppingCriteria, Sampling
-
-tracer = trace.get_tracer(__name__)
-
 
 @dataclass
 class CausalLMBatch(Batch):
@@ -108,7 +104,6 @@ class CausalLMBatch(Batch):
         )
 
     @classmethod
-    @tracer.start_as_current_span("concatenate")
     def concatenate(cls, batches: List["CausalLMBatch"]) -> "CausalLMBatch":
         # Used for padding
         total_batch_size = 0
@@ -318,7 +313,6 @@ class CausalLM(Model):
         )
         return outputs.logits, outputs.past_key_values
 
-    @tracer.start_as_current_span("generate_token")
     def generate_token(
             self, batch: CausalLMBatch
     ) -> Tuple[List[Generation], Optional[CausalLMBatch]]:
