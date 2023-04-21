@@ -16,7 +16,10 @@ from text_generation_server.models.santacoder import SantaCoder
 from text_generation_server.models.gpt_neox import GPTNeoxSharded
 from text_generation_server.models.t5 import T5Sharded
 
+import logging
+
 try:
+    logging.info("TGI INIT IN MODEL")
     if torch.cuda.is_available():
         major, minor = torch.cuda.get_device_capability()
         is_sm75 = major == 7 and minor == 5
@@ -95,6 +98,7 @@ torch.set_grad_enabled(False)
 def get_model(
     model_id: str, revision: Optional[str], sharded: bool, quantize: bool
 ) -> Model:
+    logging.info("TGI MODEL INIT")
     if "facebook/galactica" in model_id:
         if sharded:
             return GalacticaSharded(model_id, revision, quantize=quantize)
