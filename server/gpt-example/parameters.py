@@ -2,25 +2,7 @@
 # from enum import Enum
 #
 #
-# class NextTokenChooserParameters(object):
-#     # TODO: remove hardcoded values and make them configurable
-#     def __init__(self):
-#         self.temperature = 1
-#         self.top_k = None
-#         self.top_p = 1
-#         self.typical_p = 1
-#         self.do_sample = None
-#         self.seed = 155956926070191748
-#         self.repetition_penalty = 1.0
-#         self.watermark = None
-#
-#
-# class StoppingCriteriaParameters(object):
-#     def __init__(self, max_new_tokens):
-#         self.ignore_eos_token = False
-#         self.max_new_tokens = max_new_tokens
-#         self.stop_sequences = []
-#
+
 #
 
 #
@@ -51,13 +33,7 @@
 #         self.generated_text = generated_text
 #
 #
-# class FinishReasonParameters(Enum):
-#     # number of generated tokens == `max_new_tokens`
-#     Length = "length"
-#     # the model generated its end of sequence token
-#     EndOfSequenceToken = "eos_token"
-#     # the model generated a text included in `stop_sequences`
-#     StopSequence = "stop_sequence"
+
 #
 #
 # class GeneratedText(object):
@@ -169,3 +145,31 @@ class Request:
         self.parameters = parameters
         self.stopping_parameters = stopping_parameters
         self.truncate = 100
+
+
+class NextTokenChooserParameters(object):
+    # TODO: remove hardcoded values and make them configurable
+    def __init__(self):
+        self.temperature = 1
+        self.top_k = None
+        self.top_p = 1
+        self.typical_p = 1
+        self.do_sample = None
+        self.seed = 155956926070191748
+        self.repetition_penalty = 1.0
+        self.watermark = None
+
+
+class StoppingCriteriaParameters(object):
+    def __init__(self, max_new_tokens):
+        self.ignore_eos_token = False
+        self.max_new_tokens = max_new_tokens
+        self.stop_sequences = []
+
+class FinishReasonParameters(Enum):
+    # number of generated tokens == `max_new_tokens`
+    Length = "length"
+    # the model generated its end of sequence token
+    EndOfSequenceToken = "eos_token"
+    # the model generated a text included in `stop_sequences`
+    StopSequence = "stop_sequence"
