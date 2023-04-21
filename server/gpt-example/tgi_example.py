@@ -4,7 +4,7 @@ sys.path.append('/tmp/ws/text-generation-inference/server')
 
 from parameters import Request, Batch, \
     StoppingCriteriaParameters, NextTokenChooserParameters
-from causal_lm import CausalLM
+from causal_lm import CausalLM, CausalLMBatch
 from gpt_neox import GPTNeoxSharded
 
 import os
@@ -23,7 +23,7 @@ def handle(args):
     parameters = NextTokenChooserParameters()
     stopping_criteria = StoppingCriteriaParameters(args.max_new_tokens)
     request = Request(INPUT_TEXT, parameters, stopping_criteria)
-    request_batch = Batch([request])
+    request_batch = CausalLMBatch([request])
 
     batch = model.batch_type.get_batch(request_batch, model.tokenizer, model.device)
     token_count = 1
