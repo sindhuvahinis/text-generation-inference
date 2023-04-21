@@ -135,6 +135,7 @@ class CausalLMBatch(Batch):
     @classmethod
     @tracer.start_as_current_span("concatenate")
     def concatenate(cls, batches: List["CausalLMBatch"]) -> "CausalLMBatch":
+        logging.info("CAUSAL LM COncatenate")
         # Used for padding
         total_batch_size = 0
         max_input_length = 0
@@ -302,6 +303,7 @@ class CausalLM(Model):
         quantize: bool = False,
         decode_buffer: int = 3,
     ):
+        logging.info("Causal LM Init ")
         if torch.cuda.is_available():
             device = torch.device("cuda")
             dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
@@ -344,6 +346,7 @@ class CausalLM(Model):
     def forward(
         self, input_ids, attention_mask, position_ids, past_key_values: Optional = None
     ) -> Tuple[torch.Tensor, List[Tuple[torch.Tensor, torch.Tensor]]]:
+        logging.info("CAUSAL LM Forward")
         # Model Forward
         outputs = self.model.forward(
             input_ids=input_ids,
