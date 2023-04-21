@@ -23,7 +23,7 @@ def handle(args):
     parameters = NextTokenChooserParameters()
     stopping_criteria = StoppingCriteriaParameters(args.max_new_tokens)
     request = Request(INPUT_TEXT, parameters, stopping_criteria)
-    request_batch = CausalLMBatch([request])
+    request_batch = Batch([request])
 
     batch = model.batch_type.get_batch(request_batch, model.tokenizer, model.device)
     token_count = 1
