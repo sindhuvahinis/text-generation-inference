@@ -22,14 +22,7 @@
 #         self.stop_sequences = []
 #
 #
-# class Request(object):
-#     def __init__(self, inputs, parameters, stopping_parameters) -> None:
-#         self.id = None
-#         self.inputs = inputs
-#         self.input_length = len(self.inputs.split(" "))
-#         self.parameters = parameters
-#         self.stopping_parameters = stopping_parameters
-#         self.truncate = 100
+
 #
 #
 # class Batch(object):
@@ -166,3 +159,13 @@ class Generation:
             if self.generated_text is not None
             else None,
         )
+
+
+class Request:
+    def __init__(self, inputs, parameters, stopping_parameters) -> None:
+        self.id = None
+        self.inputs = inputs
+        self.input_length = len(self.inputs.split(" "))
+        self.parameters = parameters
+        self.stopping_parameters = stopping_parameters
+        self.truncate = 100
