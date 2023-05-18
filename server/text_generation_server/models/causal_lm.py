@@ -521,6 +521,9 @@ class CausalLM(Model):
             batch.past_key_values,
         )
 
+        from loguru import logger
+        logger.info(f"Printing logits {logits}")
+
         # Results
         generations: List[Generation] = []
         stopped = True
