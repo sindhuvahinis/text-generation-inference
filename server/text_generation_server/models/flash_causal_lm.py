@@ -475,7 +475,8 @@ class FlashCausalLM(Model):
         )
 
         from loguru import logger
-        logger.info(f"Printing logits {out}")
+        print(f"Printing logits {out}")
+        # save this to the file torch.save()
 
         if prefill:
             if len(batch) > 1:
