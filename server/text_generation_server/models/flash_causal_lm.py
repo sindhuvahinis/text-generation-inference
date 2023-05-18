@@ -474,6 +474,9 @@ class FlashCausalLM(Model):
             pre_allocate_past_size,
         )
 
+        from loguru import logger
+        logger.info(f"Printing logits {out}")
+
         if prefill:
             if len(batch) > 1:
                 # We create the prefill_tokens_indices tensor that will be used to gather prefill logprobs
