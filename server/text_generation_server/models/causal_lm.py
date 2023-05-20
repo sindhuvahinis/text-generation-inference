@@ -522,6 +522,8 @@ class CausalLM(Model):
         )
 
         from loguru import logger
+        import sys
+        logger.add(sys.stdout, level="INFO")
         logger.info(f"Printing logits {logits}")
 
         # Results

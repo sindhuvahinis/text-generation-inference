@@ -473,7 +473,9 @@ class FlashCausalLM(Model):
             batch.past_key_values,
             pre_allocate_past_size,
         )
-        logger.info(f"Printing logits {out}")
+        import sys
+        logger.add(sys.stdout, level="INFO")
+        logger.info(f"Printing logits in flash_causal_lm {out}")
         # save this to the file torch.save()
 
         if prefill:
