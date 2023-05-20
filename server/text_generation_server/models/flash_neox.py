@@ -29,6 +29,7 @@ class FlashNeoX(FlashCausalLM):
         revision: Optional[str] = None,
         quantize: Optional[str] = None,
     ):
+
         super(FlashNeoX, self).__init__(
             FlashGPTNeoXForCausalLM, model_id, revision, quantize
         )

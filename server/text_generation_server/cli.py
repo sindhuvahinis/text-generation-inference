@@ -53,6 +53,8 @@ def serve(
         diagnose=False,
     )
 
+    logger.info("Sindhu's script")
+
     # Import here after the logger is added to log potential import exceptions
     from text_generation_server import server
     from text_generation_server.tracing import setup_tracing

@@ -4,7 +4,7 @@ import torch.distributed
 import numpy as np
 
 from torch.nn import functional as F
-
+from loguru import logger
 from dataclasses import dataclass
 from opentelemetry import trace
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, PreTrainedModel
@@ -473,9 +473,7 @@ class FlashCausalLM(Model):
             batch.past_key_values,
             pre_allocate_past_size,
         )
-
-        from loguru import logger
-        print(f"Printing logits {out}")
+        logger.info(f"Printing logits {out}")
         # save this to the file torch.save()
 
         if prefill:
